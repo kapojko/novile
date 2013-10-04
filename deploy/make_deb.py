@@ -1,12 +1,33 @@
 #!/usr/bin/python
 
-import string, os, stat, shutil, subprocess, mmap, re, glob
+import string, os, stat, shutil, subprocess, mmap, re, glob, platform
 
 # Package options
-pkg_options = {
-	'pkg_name': 'libnovile',
-	'architecture': "amd64",
-	'build_system': 'debian7'}
+pkg_options = {}
+
+# Replace all non-alphanumeric characters
+def clr_str(s, repl_char):
+	return re.sub('[^0-9a-zA-Z]+', repl_char, s)
+
+# Determine architecture
+def det_architecture():
+	machine = platform.machine()
+	if machine == 'x86_64':
+		return 'amd64'
+	else:
+		return machine
+
+# Determine build system
+def det_build_system():
+	system = platform.system()
+	if system == 'Linux':
+		dist = platform.linux_distribution()
+		return dist[0] + dist[1]
+	elif system == 'Windows':
+		win32_ver = platform.win32_ver()
+		return win32_ver[1]
+	else:
+		return system + platform.release()
 
 # Extract package version
 def read_version(src_w_version, version_prefix):
@@ -28,6 +49,8 @@ def read_version(src_w_version, version_prefix):
 		
 		return version + '-' + package_version
 
+pkg_options['architecture'] = clr_str(det_architecture(), '-')
+pkg_options['build_system'] = clr_str(det_build_system(), '-')
 
 src_w_version = '../pro/novile.pro'
 version_prefix = 'VERSION = '
@@ -57,7 +80,7 @@ def collect_files(pkg_root):
 
 # Build packet
 def build_packet(pkg_root):
-	pkg_name = pkg_options['pkg_name'] + '.' + pkg_options['build_system'] + '_' + pkg_options['version'] + \
+	pkg_name = 'libnovile' + '.' + pkg_options['build_system'] + '_' + pkg_options['version'] + \
 		'_' + pkg_options['architecture'] + '.deb'
 	subprocess.check_call(['fakeroot', 'dpkg-deb', '--build', pkg_root, pkg_name])
 
